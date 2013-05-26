@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+<!-- Generated using Flame-Ware Solutions XML-2-XSD v2.0 at http://www.flame-ware.com/Products/XML-2-XSD/ -->
+<xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+  <xs:element name="attr" nillable="true">
+    <xs:complexType>
+      <xs:simpleContent msdata:ColumnName="attr_Text" msdata:Ordinal="3">
+        <xs:extension base="xs:string">
+          <xs:attribute name="tag" type="xs:string" />
+          <xs:attribute name="vr" type="xs:string" />
+          <xs:attribute name="len" type="xs:string" />
+        </xs:extension>
+      </xs:simpleContent>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="dicom">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="response" minOccurs="0" maxOccurs="unbounded">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element ref="attr" minOccurs="0" maxOccurs="unbounded" />
+            </xs:sequence>
+            <xs:attribute name="number" type="xs:string" />
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="qresponse" minOccurs="0" maxOccurs="unbounded">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element ref="attr" minOccurs="0" maxOccurs="unbounded" />
+            </xs:sequence>
+            <xs:attribute name="number" type="xs:string" />
+            <xs:attribute name="qrequest" type="xs:string" />
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+      <xs:attribute name="datetime" type="xs:string" />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="NewDataSet" msdata:IsDataSet="true" msdata:UseCurrentLocale="true">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="attr" />
+        <xs:element ref="dicom" />
+      </xs:choice>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

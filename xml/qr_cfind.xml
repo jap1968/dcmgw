@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dicom datetime="20130526224447+0200">
+<!--Query Response #1:-->
+<response number='1'>
+<!--Specific Character Set-->
+<attr tag="00080005" vr="CS" len="0"></attr>
+<!--Study Date-->
+<attr tag="00080020" vr="DA" len="8">19991223</attr>
+<!--Study Time-->
+<attr tag="00080030" vr="TM" len="6">100545</attr>
+<!--Accession Number-->
+<attr tag="00080050" vr="SH" len="4">0001</attr>
+<!--Query/Retrieve Level-->
+<attr tag="00080052" vr="CS" len="6">STUDY</attr>
+<!--Retrieve AE Title-->
+<attr tag="00080054" vr="AE" len="4">TEST</attr>
+<!--Modalities in Study-->
+<attr tag="00080061" vr="CS" len="4">ECG</attr>
+<!--Study Description-->
+<attr tag="00081030" vr="LO" len="0"></attr>
+<!--Patient?s Name-->
+<attr tag="00100010" vr="PN" len="12">Patient^Test</attr>
+<!--Patient ID-->
+<attr tag="00100020" vr="LO" len="8">123-654</attr>
+<!--Patient?s Birth Date-->
+<attr tag="00100030" vr="DA" len="8">19440102</attr>
+<!--Patient?s Sex-->
+<attr tag="00100040" vr="CS" len="2">M</attr>
+<!--Study Instance UID-->
+<attr tag="0020000D" vr="UI" len="22">1.3.6.1.4.1.6018.4.999</attr>
+<!--Study ID-->
+<attr tag="00200010" vr="SH" len="6">43288</attr>
+<!--Number of Study Related Series-->
+<attr tag="00201206" vr="IS" len="2">1</attr>
+<!--Number of Study Related Instances-->
+<attr tag="00201208" vr="IS" len="2">1</attr>
+</response>
+<!--Query Response #2:-->
+<response number='2'>
+<!--Specific Character Set-->
+<attr tag="00080005" vr="CS" len="0"></attr>
+<!--Study Date-->
+<attr tag="00080020" vr="DA" len="8">19940323</attr>
+<!--Study Time-->
+<attr tag="00080030" vr="TM" len="6">115104</attr>
+<!--Accession Number-->
+<attr tag="00080050" vr="SH" len="0"></attr>
+<!--Query/Retrieve Level-->
+<attr tag="00080052" vr="CS" len="6">STUDY</attr>
+<!--Retrieve AE Title-->
+<attr tag="00080054" vr="AE" len="4">TEST</attr>
+<!--Modalities in Study-->
+<attr tag="00080061" vr="CS" len="2">US</attr>
+<!--Study Description-->
+<attr tag="00081030" vr="LO" len="14">Echocardiogram</attr>
+<!--Patient?s Name-->
+<attr tag="00100010" vr="PN" len="10">Rubo DEMO</attr>
+<!--Patient ID-->
+<attr tag="00100020" vr="LO" len="12">123-45-6789</attr>
+<!--Patient?s Birth Date-->
+<attr tag="00100030" vr="DA" len="8">19231016</attr>
+<!--Patient?s Sex-->
+<attr tag="00100040" vr="CS" len="2">F</attr>
+<!--Study Instance UID-->
+<attr tag="0020000D" vr="UI" len="16">999.999.3859744</attr>
+<!--Study ID-->
+<attr tag="00200010" vr="SH" len="10">027893462</attr>
+<!--Number of Study Related Series-->
+<attr tag="00201206" vr="IS" len="2">1</attr>
+<!--Number of Study Related Instances-->
+<attr tag="00201208" vr="IS" len="2">1</attr>
+</response>
+</dicom>

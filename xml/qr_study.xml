@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dicom datetime="20130526224718+0200">
+<!--Query Response #1:-->
+<response number='1'>
+<!--Specific Character Set-->
+<attr tag="00080005" vr="CS" len="0"></attr>
+<!--Query/Retrieve Level-->
+<attr tag="00080052" vr="CS" len="6">SERIES</attr>
+<!--Retrieve AE Title-->
+<attr tag="00080054" vr="AE" len="4">TEST</attr>
+<!--Modality-->
+<attr tag="00080060" vr="CS" len="2">US</attr>
+<!--Study Instance UID-->
+<attr tag="0020000D" vr="UI" len="16">999.999.3859744</attr>
+<!--Series Instance UID-->
+<attr tag="0020000E" vr="UI" len="16">999.999.94827453</attr>
+<!--Series Number-->
+<attr tag="00200011" vr="IS" len="4">5829</attr>
+</response>
+<!--Query Response #1 for Query Request #1/1:-->
+<qresponse number='1' qrequest='1'>
+<!--SOP Class UID-->
+<attr tag="00080016" vr="UI" len="28">1.2.840.10008.5.1.4.1.1.3.1</attr>
+<!--SOP Instance UID-->
+<attr tag="00080018" vr="UI" len="30">999.999.133.1996.1.1800.1.6.29</attr>
+<!--Query/Retrieve Level-->
+<attr tag="00080052" vr="CS" len="6">IMAGE</attr>
+<!--Retrieve AE Title-->
+<attr tag="00080054" vr="AE" len="4">TEST</attr>
+<!--Series Instance UID-->
+<attr tag="0020000E" vr="UI" len="16">999.999.94827453</attr>
+<!--Instance Number-->
+<attr tag="00200013" vr="IS" len="2">28</attr>
+</qresponse>
+</dicom>
