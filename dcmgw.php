@@ -1,5 +1,28 @@
 <?php
 
+/*
+
+    Copyright (C) 2013  Jose Antonio Perez
+    [ http://goo.gl/lW17d ]
+
+    This file is part of dcmgw (Dicom gateway)
+    [ https://github.com/jap1968/dcmgw ]
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see http://www.gnu.org/licenses/gpl.html
+    
+*/
+
 define('DCMGW_INCLUDE', './');
 
 include_once(DCMGW_INCLUDE.'dcmgwPacs.php');
@@ -15,13 +38,9 @@ if ($operation == 'cfind') {
     $studyUID = $_GET['studyUID'];
     dicomQRStudy($pacs, $studyUID);
   }
-  else 
-
-//if (isset($_GET['patId'])) {
-    // Ampliar a patIdIssuer ???
-//    $patId = $_GET['patId'];
+  else {
     dicomQR($pacs);
-//  }
+  }
 }
 else if ($operation == 'dicomfields') {
   $studyUID = $_GET['studyUID'];
@@ -224,6 +243,7 @@ function dicomQR ($pacs) {
 
 
   // print_r($_GET);
+  // ToDo: Take also into account PatientIdIssuer
   $qPatId = isset($_GET['patId']) ? " -q 00100020='" . $_GET['patId'] . "'" : "";
   $qStudyDate = isset($_GET['studyDate']) ? " -q StudyDate={$_GET['studyDate']}" : ""; // AAAAMMDD ???
   $qFilter = $qPatId . $qStudyDate . " ";
@@ -365,8 +385,8 @@ function getWado($pacs, $studyUID, $seriesUID, $objectUID) {
   if (isset($_GET['contentType']) && $_GET['contentType'] == 'application/dicom') {
     $header = "Content-Type: application/dicom";
     $uriWado .= "&contentType=application%2Fdicom";
-    // &transferSyntax=1.2.840.10008.1.2.1 // 20130502, Explicit VR little endian
-//    $uriWado .= "&transferSyntax=1.2.840.10008.1.2.1"; 
+    // 20130502, Force transfer syntax to Explicit VR little endian
+    // $uriWado .= "&transferSyntax=1.2.840.10008.1.2.1"; 
   }
   else {
     $header = "Content-Type: image/jpeg";
@@ -375,12 +395,9 @@ function getWado($pacs, $studyUID, $seriesUID, $objectUID) {
   // To get thumbnails:
   if (isset($_GET['rows']) && isset($_GET['cols'])) {
 //    $uriWado .= "&rows={$_GET['rows']}&cols={$_GET['cols']}";
-    $uriWado .= "&rows=512&cols=512";
+    $uriWado .= "&rows=".THUMBNAIL_SIZE."&cols=".THUMBNAIL_SIZE;
   }
 
-
-//  echo $uriWado;
-//die;
 //  header("Cache-Control: public");
 //  header('Expires: '.gmdate('D, d M Y H:i:s', strtotime('+1 day')).' GMT');
   header($header);

@@ -83,7 +83,8 @@ define ('DEBUG_INFO', 5);
 define ('DEBUG_DUMP', 9);
 define ('DEBUG_LEVEL', DEBUG_NONE);
 
-define ('AETITLE_GATEWAY', 'DCMQR');
+define ('AETITLE_GATEWAY', 'DCMGW');
+define ('THUMBNAIL_SIZE', '200');
 
 // ******* ********* ********* ********* ********* ********* ********* *********
 
