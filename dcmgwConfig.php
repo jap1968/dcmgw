@@ -70,10 +70,7 @@ define ('PATH_BASE_DCM4CHE2', '/usr/local/dcm4che/dcm4che2/bin/');
 define ('PATH_BASE_DICOM_CACHE', '/tmp/dicom/');
 
 define ('PATH_WGET', '/usr/bin/wget');
-define ('PATH_CURL', '/usr/bin/curl');
-define ('RETRIEVE_WGET', 0);
-define ('RETRIEVE_CURL', 1);
-define ('RETRIEVE_METHOD', RETRIEVE_CURL);
+define ('RETRIEVE_LOCAL', true);
 
 define('SHOW_REQUEST', false);
 define('XML_ENCODING', 'UTF-8');

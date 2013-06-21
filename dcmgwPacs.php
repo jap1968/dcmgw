@@ -34,7 +34,7 @@
   }
 
 // ******* ********* ********* ********* ********* ********* ********* *********
-// Configuration: Define values for your own PACS
+// Configuration: Generic Dicom Storage SCP
 // ******* ********* ********* ********* ********* ********* ********* *********
 
 class PACS

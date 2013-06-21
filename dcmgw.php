@@ -69,8 +69,6 @@ else {
   if (isset($_GET['rows']) && isset($_GET['cols'])) {
     $uriWado .= "&rows={$_GET['rows']}&cols={$_GET['cols']}";
   }
-//  echo $uriWado;
-//die;
 //  header("Cache-Control: public");
 //  header('Expires: '.gmdate('D, d M Y H:i:s', strtotime('+1 day')).' GMT');
   header("Content-Type: image/jpeg");
@@ -242,7 +240,6 @@ function dicomQR ($pacs) {
   // (0020,000D) Study IUID
 
 
-  // print_r($_GET);
   // ToDo: Take also into account PatientIdIssuer
   $qPatId = isset($_GET['patId']) ? " -q 00100020='" . $_GET['patId'] . "'" : "";
   $qStudyDate = isset($_GET['studyDate']) ? " -q StudyDate={$_GET['studyDate']}" : ""; // AAAAMMDD ???
@@ -380,15 +377,18 @@ function processDicomField($dcmString, $encoding) {
  * Recovers a Dicom object via WADO
  */
 function getWado($pacs, $studyUID, $seriesUID, $objectUID) {
+
+//  $tStart = microtime(true);
   
   $uriWado = $pacs->getUriWado($studyUID, $seriesUID, $objectUID);
   if (isset($_GET['contentType']) && $_GET['contentType'] == 'application/dicom') {
     $header = "Content-Type: application/dicom";
     $uriWado .= "&contentType=application%2Fdicom";
-    // 20130502, Force transfer syntax to Explicit VR little endian
-    // $uriWado .= "&transferSyntax=1.2.840.10008.1.2.1"; 
+    // 20130502: Force transfer syntax to Explicit VR little endian
+    $uriWado .= "&transferSyntax=1.2.840.10008.1.2.1"; 
   }
   else {
+    error_log("ERROR jpeg/WADO files should not be used anymore");
     $header = "Content-Type: image/jpeg";
   }
 
@@ -398,13 +398,62 @@ function getWado($pacs, $studyUID, $seriesUID, $objectUID) {
     $uriWado .= "&rows=".THUMBNAIL_SIZE."&cols=".THUMBNAIL_SIZE;
   }
 
+  if (RETRIEVE_LOCAL) {
+    // Store a local copy of the Dicom file to obtain its size.
+    $tmpFWado = tempnam('/tmp', 'dicom_');
+//    $tmpFWado = tempnam('/dev/shm/dicom', 'dicom_');
+    if ($getOk = getLocalWado($uriWado, $tmpFWado)) {
+      $fp = fopen($tmpFWado, 'rb');
+      header("Content-Type: application/dicom");
+      header("Content-Length: " . filesize($tmpFWado));
+      header("Content-Disposition: inline");
+      fpassthru($fp);
+      fclose($fp);
+    }
+    else {
+      error_log("Error retrieving WADO/Dicom object");
+    }
+    unlink($tmpFWado);
+  }
+  else {
 //  header("Cache-Control: public");
 //  header('Expires: '.gmdate('D, d M Y H:i:s', strtotime('+1 day')).' GMT');
-  header($header);
-  readfile($uriWado);
+    header($header);
+    readfile($uriWado);
+  }
 
+/*
+  $tEnd = microtime(true);
+  $tDelta = round(1000 * ($tEnd - $tStart));
+  $logMsg = "getWado: $tDelta ms";
+  error_log($logMsg);
+*/
 }
 
-/* ************************************************************************** */
+// ******* ********* ********* ********* ********* ********* ********* *********
+
+function getLocalWado($uriWado, $tmpFWado) {
+  $getOk = false;
+  $numTry = 0;
+  $maxTry = 3;
+  $delayTry = 1;
+
+  while (!$getOk && $numTry < $maxTry) {
+    if ($numTry > 0) {
+      sleep($delayTry);
+    }
+    $retrieveCommand = PATH_WGET." '$uriWado' -O $tmpFWado --server-response 2> /dev/stdout | grep Content-Type | awk -F\"Content-Type: \" '{print $2}'";
+
+    // error_log($retrieveCommand);
+    $outputCommand = array();
+    exec($retrieveCommand, $outputCommand);
+    // Verification: The returned contents is a dicom object
+    $getOk = $outputCommand[0] == 'application/dicom';
+    $numTry++;
+  }
+  return $getOk;
+}
+
+// ******* ********* ********* ********* ********* ********* ********* *********
 
 ?>
