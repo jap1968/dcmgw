@@ -88,8 +88,15 @@ function processResponse($outputRes, $encoding) {
 
   $pattern = "/^((?:[0|1][0-9]|2[0-3])(?::[0-5][0-9]){2},[0-9]{3})\s([A-Z]+)\s+-\s(.+)$/";
   $dicom = array();
+  $dicom['request'] = '';
+  $dicom['responses'] = array();
+  $dicom['status'] = array('code' => 0, 'message' => '');
+  $dataElements = array();
+  
+  $patterns = definePatterns();
   
   foreach ($outputRes as $numLine => $strLine) {
+
     $matches = array();
     $numMatches = preg_match($pattern, $strLine, $matches);
     if ($numMatches == 1) {
@@ -99,40 +106,59 @@ function processResponse($outputRes, $encoding) {
       // $matches[3]: info string
       $outputStr = $matches[3];
       if (DEBUG_LEVEL >= DEBUG_DUMP) {
-        // Mensajes de tipo INFO / ERROR
-        echo "<div style='color:red; margin:2em 0.5em;'>Patr&oacute;n reconocido (I)</div>";
+        // Messages of type INFO / ERROR
+        echo "<div style='color:red; margin:2em 0.5em;'>Pattern matching (I)</div>";
         echo "<pre>";
         print_r($matches);
         echo "</pre>";
       }
-// 20120120: ToDo: Dealing with errors. Inform the client about the error
+
       if ($outputType == 'ERROR') {
-        echo "ERROR";
+        $dicom['status']['code'] = -1;
+        $dicom['status']['message'] = $outputStr;
+
+        // Log the error message
+        error_log("ERROR: $outputStr");
         if (DEBUG_LEVEL >= DEBUG_INFO) {
           echo ": $outputStr";
         }
-        echo "<br>\n";
-        return false;
       }
 
-      if ($element = identifyPattern($outputStr)) {
+      if ($element = identifyPattern($outputStr, $patterns)) {
+        $element['dataElements'] = array(); // Array of data elements
         $lineNum = $numLine + 1;
-        $xmlString = '';
+//        $xmlString = '';
         while(strlen($outputRes[$lineNum]) > 0) {
           if (DEBUG_LEVEL >= DEBUG_INFO) {
             echo $outputRes[$lineNum]."<br>\n";
           }
-          if ($df = processDicomField($outputRes[$lineNum], $encoding)) {
-            $xmlString .= $df['xmlString']."\n";
+          if ($dataElement = processDataElement($outputRes[$lineNum], $encoding)) {
+//            $xmlString .= $dataElement['xmlString']."\n";
+            array_push($element['dataElements'], $dataElement);
           }
+
           $lineNum++;
         }
-        $element['xmlString'] = $element['xmlPre'].$xmlString.$element['xmlPost'];
+//        $element['xmlString'] = $element['xmlPre'].$xmlString.$element['xmlPost'];
+//        $element['xmlString'] = '';
         if (DEBUG_LEVEL >= DEBUG_DUMP) {
           // print_r($dicomHeaders);
-          echo $element['xmlString'];
+//          echo $element['xmlString'];
         }
-        array_push($dicom, $element);
+        if ($element['type'] == QUERY_RESPONSE_ROOT) {
+          $dicom['responses'][$element['number']] = $element;
+        }
+        else if ($element['type'] == QUERY_RESPONSE) {
+          $dicom['responses'][$element['qrequest']]['responses'][$element['number']] = $element;
+        }
+        else if ($element['type'] == QUERY_REQUEST_ROOT) {
+          $dicom['request'] = $element;
+        }
+        else if ($element['type'] == QUERY_REQUEST) {
+        //
+          $dicom['responses'][$element['number']]['request'] = $element;
+        }
+
       }
     }
   }
@@ -140,11 +166,31 @@ function processResponse($outputRes, $encoding) {
 
   if (DEBUG_LEVEL >= DEBUG_INFO) {
     echo "<pre>";
-//    print_r($result);
+    print_r($dicom);
     echo "</pre>";
   }
+/*
   elseif (DEBUG_LEVEL == DEBUG_NONE) {
-    header('Content-type: text/xml; charset='.XML_ENCODING);
+    print_r($dicom);    
+  }
+*/  
+  return $dicom;
+} // function processResponse(...)
+
+// *****************************************************************************
+
+function showResponse($dicomResponse) {
+//    header('Content-type: text/xml; charset='.XML_ENCODING);
+
+/*  
+  echo "showResponse";
+  
+  echo "<pre>";
+  print_r($dicomResponse);
+  echo "</pre>";
+*/
+
+/*
     echo "<?xml version=\"1.0\" encoding=\"".XML_ENCODING."\"?>\n";
 
     $fechaAhora = strftime("%Y%m%d%H%M%S%z");
@@ -153,22 +199,159 @@ function processResponse($outputRes, $encoding) {
       echo $response['xmlString'];
     }
     echo "</dicom>\n";
+*/
+
+  $rightNow = strftime("%Y%m%d%H%M%S%z");
+  // echo "<dicom datetime=\"$rightNow\">\n";
+
+
+  header('Content-type: text/plain; charset='.XML_ENCODING);
+  $nLine = "\n";
+//  $nLine = "";
+
+
+
+  $jsonString = "{";
+  $jsonString .= "{$nLine}\"status\": {\"code\": {$dicomResponse['status']['code']}, \"message\": \"{$dicomResponse['status']['message']}\"},";
+  $jsonString .= "{$nLine}\"datetime\": \"$rightNow\",";
+  $jsonString .= "{$nLine}";
+  $jsonString .= strReqResp($dicomResponse, $nLine);
+  $jsonString .= "$nLine}";
+
+  
+//  foreach ($dicomResponse['responses'] as $response) {
+
+/*  
+    switch ($response['type']) {
+      case QUERY_REQUEST_ROOT:
+        $element['tag'] = 'request';
+        $element['xmlPre'] .= "<{$element['tag']} qrim='{$matches[1]}'>\n";
+        break;
+      case QUERY_RESPONSE_ROOT:
+//        $element['tag'] = 'response';
+//        $element['xmlPre'] .= "<{$element['tag']} number='{$matches[1]}'>\n";
+        $jsonString .= "{\"response\": $nLine";
+        $jsonString .= "{\"number\": \"{$response['number']}\", $nLine";
+        
+        break;
+      case QUERY_REQUEST:
+        $element['tag'] = 'qrequest';
+        $element['xmlPre'] .= "<{$element['tag']} number='{$matches[1]}' qrim='{$matches[3]}'>\n";
+        $element['responses'] = array();
+        break;
+      case QUERY_RESPONSE:
+        $element['tag'] = 'qresponse';
+        $element['xmlPre'] .= "<{$element['tag']} number='{$matches[1]}' qrequest='{$matches[2]}'>\n";
+        break;
+      default:
+    }
+*/  
+
+    
+//  }
+  echo $jsonString;
+
+
+/*
+      $xmlString = "<!--{$d['tagName']}-->\n";
+      $xmlString .= "<attr tag=\"{$d['tagGroup']}{$d['tagElement']}\" vr=\"{$d['valueRepr']}\" len=\"{$d['valueLength']}\">";
+      $xmlString .= "{$d['value']}</attr>";
+      $d['xmlString'] = $xmlString;
+      
+      // json
+      
+      // "restaurant" : { "name" : "McDonald's", "food" : "burger" }},
+      // vr: Value Representation, vl: Value Length, vf: Value Field
+      $tagName = $showName ? "\"name\" : \"{$d['tagName']}\", ": '';
+      $jsonString = "{\"DataElement\" : {\"tag\" : \"{$d['tagGroup']}{$d['tagElement']}\", $tagName \"vr\" : \"{$d['valueRepr']}\", \"vl\" : \"{$d['valueLength']}\", \"vf\" : {$d['value']} }}";
+*/
+
+
+}
+
+// *****************************************************************************
+// *****************************************************************************
+
+/**
+ * Generates the JSON output corresponding to an array of responses
+ * A more natural version...
+ */
+function strReqResp($e, $nLine = '', $root = true) {
+// print_r($e);
+
+  $jsonString = "";
+
+  if (array_key_exists('request', $e)) { // SHOW_REQUEST && 
+
+    $jsonString .= "\"request\": ";
+    $jsonString .= "{$nLine}{\"dataElements\": ";
+    $jsonString .= strDataElements($e['request']['dataElements'], $nLine);   
+    $jsonString .= "$nLine},";
   }
-} // function processResponse(...)
+
+  $jsonString .= "{$nLine}\"responses\": [";
+  $firstResponse = true;   
+  foreach ($e['responses'] as $response) {
+    if ($firstResponse) {
+      $firstResponse = false;
+      $separator = '';
+    }
+    else {
+      $separator = ',';
+    }
+
+    $jsonString .= "{$separator}{$nLine}{\"number\": {$response['number']},";
+    $jsonString .= "{$nLine}\"dataElements\": ";
+    $jsonString .= strDataElements($response['dataElements'], $nLine);
+    // Only one level deep
+    if ($root) {
+      $jsonString .= ",{$nLine}";
+      $jsonString .= strReqResp($response, $nLine, false);
+    }
+    $jsonString .= "{$nLine}}";
+
+  }
+  $jsonString .= "$nLine]";
+ 
+  return $jsonString;
+}
 
 // *****************************************************************************
 
-function identifyPattern($testStr) {
+/**
+ * Generates the JSON output corresponding to an array of Dicom data elements (attributes)
+ */
+function strDataElements($dataElements, $nLine = '') {
+  $jsonString = "[";
+  $firstElement = true;   
+  foreach ($dataElements as $d) {
+    if ($firstElement) {
+      $firstElement = false;
+      $separator = '';
+    }
+    else {
+      $separator = ',';
+    }
+    $jsonString .= "{$separator}{$nLine}{\"tag\": \"{$d['tagGroup']}{$d['tagElement']}\", \"vr\": \"{$d['valueRepr']}\", \"vl\": \"{$d['valueLength']}\", \"vf\": \"{$d['value']}\" }";            
+  }
+  $jsonString .= "$nLine]";
+  
+  return $jsonString;
+}
 
+// *****************************************************************************
+
+function definePatterns() {
   $patterns = array();
-  $element = false;
 
   if (SHOW_REQUEST) {
     // Send Query Request using 1.2.840.10008.5.1.4.1.2.2.1/Study Root Query/Retrieve Information Model - FIND:
     $patterns[QUERY_REQUEST_ROOT] = "/^Send Query Request using ([0-9]+(?:\.[0-9]+)+)\/([[:alpha:][:space:]\/\-]+):$/";
 
     // Send Query Request #1/3 using 1.2.840.10008.5.1.4.1.2.2.1/Study Root Query/Retrieve Information Model - FIND:
-    $patterns[QUERY_REQUEST] = "/^Send Query Request #([1-9][0-9]*)\/([1-9][0-9]*) using ([0-9]+(?:\.[0-9]+)+)\/([[:alpha:][:space:]\/\-]+):$/";
+//    $patterns[QUERY_REQUEST] = "/^Send Query Request #([1-9][0-9]*)\/([1-9][0-9]*) using ([0-9]+(?:\.[0-9]+)+)\/([[:alpha:][:space:]\/\-]+):$/";
+    $patterns[QUERY_REQUEST] = "/^Send Query Request #([1-9][0-9]*)\/([1-9][0-9]*) using ([0-9]+(?:\.[0-9]+)+)\/[[:alpha:][:space:]\/\-]+:$/";
+
   }
 
   // Query Response #1:
@@ -176,40 +359,61 @@ function identifyPattern($testStr) {
 
   // Query Response #1 for Query Request #1/3:
   $patterns[QUERY_RESPONSE] = "/^Query Response #([1-9][0-9]*) for Query Request #([1-9][0-9]*)\/([1-9][0-9]*):$/";
+
+  return $patterns;
+}
+
+// *****************************************************************************
+
+function identifyPattern($testStr, $patterns) {
+
+  $element = false;
   $matches = array();
 
   $numMatches = 0;
+  if (DEBUG_LEVEL >= DEBUG_INFO) {
+    echo "<div style=\"color: red;\">$testStr</div>";
+  }
+
   foreach ($patterns as $type => $pattern) {
+//    echo "Testing pattern type $type<br>";
     if (DEBUG_LEVEL >= DEBUG_INFO) {
-      echo "Testing $testStr<br>against pattern: $pattern<br>";
+      echo "Testing against pattern: $pattern<br>";
     }
     $numMatches = preg_match($pattern, $testStr, $matches);
     if($numMatches == 1) {
       $element = array();
-      $element['xmlPre'] = "<!--{$matches[0]}-->\n";
+//      $element['xmlPre'] = "<!--{$matches[0]} -->\n";
       $element['type'] = $type;
       switch ($type) {
         case QUERY_REQUEST_ROOT:
           $element['tag'] = 'request';
-          $element['xmlPre'] .= "<{$element['tag']} qrim='{$matches[1]}'>\n";
+//          $element['xmlPre'] .= "<{$element['tag']} qrim='{$matches[1]}'>\n";
           break;
         case QUERY_RESPONSE_ROOT:
+//          echo "*** QUERY_RESPONSE ROOT *** ";
           $element['tag'] = 'response';
-          $element['xmlPre'] .= "<{$element['tag']} number='{$matches[1]}'>\n";
+          $element['number'] = $matches[1];
+//          $element['xmlPre'] .= "<{$element['tag']} number='{$matches[1]}'>\n";
           break;
         case QUERY_REQUEST:
           $element['tag'] = 'qrequest';
-          $element['xmlPre'] .= "<{$element['tag']} number='{$matches[1]}' qrim='{$matches[3]}'>\n";
+          $element['number'] = $matches[1];
+          $element['qrim'] = $matches[2];
+//          print_r($matches);
+//          $element['xmlPre'] .= "<{$element['tag']} number='{$matches[1]}' qrim='{$matches[2]}'>\n";
           break;
         case QUERY_RESPONSE:
           $element['tag'] = 'qresponse';
-          $element['xmlPre'] .= "<{$element['tag']} number='{$matches[1]}' qrequest='{$matches[2]}'>\n";
+          $element['number'] = $matches[1];
+          $element['qrequest'] = $matches[2]; // response asociated to a given query request.      
+//          $element['xmlPre'] .= "<{$element['tag']} number='{$matches[1]}' qrequest='{$matches[2]}'>\n";
           break;
         default:
           $element['tag'] = 'dummy';
-          $element['xmlPre'] .= "<{$element['tag']}>\n";
+//          $element['xmlPre'] .= "<{$element['tag']}>\n";
       }
-      $element['xmlPost'] = "</{$element['tag']}>\n";
+//      $element['xmlPost'] = "</{$element['tag']}>\n";
       break; // break 2 ???
     }
   }
@@ -252,6 +456,8 @@ function dicomQR ($pacs) {
     $command = 'LANG='.$pacs->getLocale().' '.PATH_BASE_DCM4CHE2.'dcmqr -device '.AETITLE_GATEWAY.' '.$pacs->getDicomServer() . $qFilter . $extraFields;
 
   // echo $command;
+  error_log($command);
+
 
   $outputRes = array();
   exec($command, $outputRes);
@@ -262,7 +468,8 @@ function dicomQR ($pacs) {
     echo "</pre>";
   }
 
-  processResponse($outputRes, $pacs->encoding);
+  $response = processResponse($outputRes, $pacs->encoding);
+  showResponse($response);
 }
 
 /*
@@ -289,7 +496,7 @@ Example of a Q/R answer (at study level)
 // *****************************************************************************
 
 /**
- * Performa a QR operation to get series and instances from a given study
+ * Performs a QR operation to get series and instances from a given study
  */
 function dicomQRStudy ($pacs, $study_IUID) {
 
@@ -312,13 +519,39 @@ function dicomQRStudy ($pacs, $study_IUID) {
     echo "</pre>";
   }
 
-  processResponse($outputRes, $pacs->encoding);
+  $response = processResponse($outputRes, $pacs->encoding);
+  showResponse($response);
 }
 
 // *****************************************************************************
 // *****************************************************************************
 
+// DicomField => DataElement
 function processDicomField($dcmString, $encoding) {
+// http://www.ncbi.nlm.nih.gov/pmc/articles/PMC3043771/
+// XML-Based DICOM Data Format
+
+  $d = processDataElement($dcmString, $encoding);
+  $showName = true;
+  if ($d) {
+  
+      $xmlString = "<!--{$d['tagName']}-->\n";
+      $xmlString .= "<attr tag=\"{$d['tagGroup']}{$d['tagElement']}\" vr=\"{$d['valueRepr']}\" len=\"{$d['valueLength']}\">";
+      $xmlString .= "{$d['value']}</attr>";
+      $d['xmlString'] = $xmlString;
+      
+      // json
+      
+      // "restaurant" : { "name" : "McDonald's", "food" : "burger" }},
+      // vr: Value Representation, vl: Value Length, vf: Value Field
+      $tagName = $showName ? "\"name\" : \"{$d['tagName']}\", ": '';
+      $jsonString = "{\"DataElement\" : {\"tag\" : \"{$d['tagGroup']}{$d['tagElement']}\", $tagName \"vr\" : \"{$d['valueRepr']}\", \"vl\" : \"{$d['valueLength']}\", \"vf\" : {$d['value']} }}";
+      
+  }
+
+}
+
+function processDataElement($dcmString, $encoding) {
   /*
     // (0008,0020) DA #8 [20080410] Study Date
     // Returned values (string):
@@ -331,7 +564,7 @@ function processDicomField($dcmString, $encoding) {
   */
 
     if (DEBUG_LEVEL >= DEBUG_INFO) {
-      echo "processDicomField($dcmString)<br>";
+      echo "processDataElement($dcmString)<br>";
     }
     $matches = array();
     $pattern = "/^\(([0-9A-F]{4}),([0-9A-F]{4})\)\s([A-Z]{2})\s#([0-9]+)\s\[([^\]]*)\]\s(.*)$/";
@@ -356,11 +589,12 @@ function processDicomField($dcmString, $encoding) {
         $d['value'] = iconv($encoding, XML_ENCODING, $d['value']);
         $d['value'] = htmlspecialchars($d['value'], ENT_QUOTES); // Convert non valid XML characters
       }
-
+/*
       $xmlString = "<!--{$d['tagName']}-->\n";
       $xmlString .= "<attr tag=\"{$d['tagGroup']}{$d['tagElement']}\" vr=\"{$d['valueRepr']}\" len=\"{$d['valueLength']}\">";
       $xmlString .= "{$d['value']}</attr>";
       $d['xmlString'] = $xmlString;
+*/      
     }
     else {
       if (DEBUG_LEVEL >= DEBUG_DUMP) {
