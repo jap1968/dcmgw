@@ -20,7 +20,7 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see http://www.gnu.org/licenses/gpl.html
-    
+
 */
 
 define('DCMGW_INCLUDE', './');
@@ -88,7 +88,7 @@ function processResponse($outputRes, $encoding) {
 
   $pattern = "/^((?:[0|1][0-9]|2[0-3])(?::[0-5][0-9]){2},[0-9]{3})\s([A-Z]+)\s+-\s(.+)$/";
   $dicom = array();
-  
+
   foreach ($outputRes as $numLine => $strLine) {
     $matches = array();
     $numMatches = preg_match($pattern, $strLine, $matches);
@@ -100,7 +100,7 @@ function processResponse($outputRes, $encoding) {
       $outputStr = $matches[3];
       if (DEBUG_LEVEL >= DEBUG_DUMP) {
         // Mensajes de tipo INFO / ERROR
-        echo "<div style='color:red; margin:2em 0.5em;'>Patr&oacute;n reconocido (I)</div>";
+        echo "<div style='color:red; margin:2em 0.5em;'>Pattern recognized (I)</div>";
         echo "<pre>";
         print_r($matches);
         echo "</pre>";
@@ -213,7 +213,7 @@ function identifyPattern($testStr) {
       break; // break 2 ???
     }
   }
-  
+
   return $element;
 }
 
@@ -241,8 +241,11 @@ function dicomQR ($pacs) {
 
 
   // ToDo: Take also into account PatientIdIssuer
+ // ToDo: Should probably use  escapeshellarg() or escapeshellcmd() to avoid shell injection attacks
+ // See: http://php.net/manual/en/function.exec.php
+
   $qPatId = isset($_GET['patId']) ? " -q 00100020='" . $_GET['patId'] . "'" : "";
-  $qStudyDate = isset($_GET['studyDate']) ? " -q StudyDate={$_GET['studyDate']}" : ""; // AAAAMMDD ???
+  $qStudyDate = isset($_GET['studyDate']) ? " -q StudyDate={$_GET['studyDate']}" : ""; // YYYYMMDD ???
   $qFilter = $qPatId . $qStudyDate . " ";
 
 
@@ -294,12 +297,12 @@ Example of a Q/R answer (at study level)
 function dicomQRStudy ($pacs, $study_IUID) {
 
   // Nivel Q/R | | -P | -S | -I
-  // Problema: Algun campo extra lo pide en la subquery de instancias, pero no en la query principal de series
+  // Problem: An extra field is asked on a subquery but not on the main series query
   $extraFields = '-r 00080060 -r 0008103E -r 00200011 -r 00201209';
   // (0008,0060) Modality
-  // (0008,103E) Series Description  // Solo se envia en las subquery
+  // (0008,103E) Series Description  // Only in subquery
   // (0020,0011) Series Number
-  // (0020,1209) Number of Series Related Instances  // Solo se envia en las subquery
+  // (0020,1209) Number of Series Related Instances  // Only in subquery
 
   $command = 'LANG='.$pacs->getLocale().' '.PATH_BASE_DCM4CHE2.'dcmqr -device '.AETITLE_GATEWAY.' -I '.$pacs->getDicomServer()." -q 0020000D=$study_IUID $extraFields";
 
@@ -379,13 +382,13 @@ function processDicomField($dcmString, $encoding) {
 function getWado($pacs, $studyUID, $seriesUID, $objectUID) {
 
 //  $tStart = microtime(true);
-  
+
   $uriWado = $pacs->getUriWado($studyUID, $seriesUID, $objectUID);
   if (isset($_GET['contentType']) && $_GET['contentType'] == 'application/dicom') {
     $header = "Content-Type: application/dicom";
     $uriWado .= "&contentType=application%2Fdicom";
     // 20130502: Force transfer syntax to Explicit VR little endian
-    $uriWado .= "&transferSyntax=1.2.840.10008.1.2.1"; 
+    $uriWado .= "&transferSyntax=1.2.840.10008.1.2.1";
   }
   else {
     error_log("ERROR jpeg/WADO files should not be used anymore");
